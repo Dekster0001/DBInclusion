@@ -1,1 +1,155 @@
+----- CREACIÓN DE BASE DE DATOS  ---------------
+IF DB_ID('Microcreditos') IS NULL
+BEGIN
+    CREATE DATABASE Microcreditos;
+END
+GO
 
+USE Microcreditos;
+GO
+
+-- TABLA USUARIO
+CREATE TABLE tblUsuario (
+    Id_usuario INT NOT NULL PRIMARY KEY,
+    Nombre VARCHAR(100),
+    Apellido VARCHAR(100),
+    dni_firmante VARCHAR(20),
+    Correo VARCHAR(100),
+    Contraseña VARCHAR(100),
+    Tipo VARCHAR(20),
+    CHECK (Tipo IN ('Admin', 'Asesor', 'Productor'))
+);
+
+-- CONSTRAINT UNIQUE AL DNI
+ALTER TABLE tblUsuario
+ADD CONSTRAINT UQ_Usuario_DNI UNIQUE (DNI);
+
+-- TABLA PRODUCTOR
+CREATE TABLE tblProductor (
+    Id_productor INT NOT NULL PRIMARY KEY,
+    Id_usuario INT,
+    Ubicacion VARCHAR(200),
+    Tipo VARCHAR(20),
+    Ingreso_promedio_mensual DECIMAL(10,2),
+    CHECK (Tipo IN ('ganaderia', 'cultivo')),
+    FOREIGN KEY (Id_usuario) REFERENCES tblUsuario(Id_usuario)
+);
+
+-- TABLA CUENTA_AHORRO
+CREATE TABLE tblCuenta_ahorro (
+    Id_cuenta INT NOT NULL PRIMARY KEY,
+    Id_productor INT,
+    Saldo_actual DECIMAL(10,2),
+    Fecha DATE,
+    FOREIGN KEY (Id_productor) REFERENCES tblProductor(Id_productor)
+);
+
+-- TABLA CUENTA
+CREATE TABLE tblCuenta (
+    Id_usuario INT,
+    Id_cuenta INT,
+    PRIMARY KEY (Id_usuario, Id_cuenta),
+    FOREIGN KEY (Id_usuario) REFERENCES tblUsuario(Id_usuario),
+    FOREIGN KEY (Id_cuenta) REFERENCES tblCuenta_ahorro(Id_cuenta)
+);
+
+-- TABLA ESTADO_CUENTA
+CREATE TABLE tblEstado_cuenta (
+    Id_estado INT IDENTITY(1,1) PRIMARY KEY,
+    Id_cuenta INT,
+    Fecha DATE,
+    Saldo_actual DECIMAL(10,2),
+    FOREIGN KEY (Id_cuenta) REFERENCES tblCuenta_ahorro(Id_cuenta)
+);
+
+-- TABLA MICROCREDITO
+CREATE TABLE tblMicrocredito (
+    Id_credito INT NOT NULL PRIMARY KEY,
+    Id_productor INT,
+    Monto_solicitado DECIMAL(10,2),
+    Interes DECIMAL(5,2),
+    Plazo_meses INT,
+    Fecha_solicitud DATE,
+    Fecha_aprobacion DATE,
+    Estado VARCHAR(20),
+    CHECK (Estado IN ('cancelado', 'en curso', 'rechazado', 'aprobado', 'pendiente')),
+    FOREIGN KEY (Id_productor) REFERENCES tblProductor(Id_productor)
+);
+
+-- TABLA PAGO
+CREATE TABLE tblPago (
+    Id_pago INT NOT NULL PRIMARY KEY,
+    Id_credito INT,
+    Fecha_pago DATE,
+    Monto_pagado DECIMAL(10,2),
+    Medio_pago VARCHAR(50),
+    FOREIGN KEY (Id_credito) REFERENCES tblMicrocredito(Id_credito)
+);
+
+-- TABLA ASESORIA_FINANCIERA
+CREATE TABLE tblAsesoria_financiera (
+    Id_asesoria INT NOT NULL PRIMARY KEY,
+    Id_productor INT,
+    Id_asesor INT,
+    Fecha DATE,
+    Observaciones TEXT,
+    Tema VARCHAR(100),
+    FOREIGN KEY (Id_productor) REFERENCES tblProductor(Id_productor),
+    FOREIGN KEY (Id_asesor) REFERENCES tblUsuario(Id_usuario)
+);
+
+-- TABLA RECOMENDACION_FINANCIERA
+CREATE TABLE tblRecomendacion_financiera (
+    Id_recomendacion INT NOT NULL PRIMARY KEY,
+    Id_productor INT,
+    Descripcion TEXT,
+    Fecha DATE,
+    Ingresos DECIMAL(10,2),
+    Historial TEXT,
+    FOREIGN KEY (Id_productor) REFERENCES tblProductor(Id_productor)
+);
+
+-- TABLA SOLICITUDES (NUEVA TABLA)
+CREATE TABLE tblSolicitudes (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    monto DECIMAL(10,2),
+    ingresos DECIMAL(10,2),
+    proposito VARCHAR(255),
+    garantia BIT,
+    estado VARCHAR(50),
+    dni_firmante VARCHAR(20),
+    fecha_firma DATE,
+    meses INT,
+    cuota_mensual DECIMAL(10,2),
+    monto_total DECIMAL(10,2),
+    FOREIGN KEY (dni_firmante) REFERENCES tblUsuario(DNI)
+);
+
+
+----  PERMISOS DE CONECCION APACHE NETBEANS CON SQLSERVER   ---------------
+GRANT SELECT, INSERT, UPDATE ON tblUsuario TO UserSQL
+GRANT SELECT, INSERT, UPDATE ON tblProductor TO UserSQL
+GRANT SELECT, INSERT, UPDATE ON tblCuenta_Ahorro TO UserSQL
+GRANT SELECT, INSERT, UPDATE ON tblCuenta TO UserSQL
+GRANT SELECT, INSERT, UPDATE ON tblEstado_cuenta TO UserSQL
+GRANT SELECT, INSERT, UPDATE ON tblMicrocredito TO UserSQL
+GRANT SELECT, INSERT, UPDATE ON tblPago TO UserSQL
+GRANT SELECT, INSERT, UPDATE ON tblAsesoria_financiera TO UserSQL
+GRANT SELECT, INSERT, UPDATE ON tblRecomendacion_financiera TO UserSQL
+GRANT SELECT, INSERT, UPDATE ON tblSolicitudes TO UserSQL
+
+
+
+-----  INSERCION DE DATOS  ---------------
+INSERT INTO tblUsuario (Id_usuario, Nombre, Apellido, DNI, Correo, Contraseña, Tipo) 
+VALUES 
+(1, 'Juan', 'Pérez', '12345678', 'juan@correo.com', '1234', 'Productor'),
+(2, 'Ana', 'López', '87654321', 'ana@correo.com', 'abcd', 'Asesor'),
+(3, 'Luis', 'Ramírez', '11111111', 'luis@correo.com', 'pass123', 'Admin'),
+(4, 'María', 'Gonzales', '22222222', 'maria@correo.com', 'clave1', 'Productor'),
+(5, 'Carlos', 'Quispe', '33333333', 'carlos@correo.com', 'secreta', 'Asesor'),
+(6, 'Elena', 'Torres', '44444444', 'elena@correo.com', '321cba', 'Productor'),
+(7, 'Jorge', 'Huamán', '55555555', 'jorge@correo.com', 'admin321', 'Admin'),
+(8, 'Lucía', 'Salazar', '66666666', 'lucia@correo.com', 'luc123', 'Productor'),
+(9, 'Pedro', 'Rojas', '77777777', 'pedro@correo.com', 'rojas321', 'Asesor'),
+(10, 'Rosa', 'Cáceres', '88888888', 'rosa@correo.com', 'c4c3r3s', 'Productor');
